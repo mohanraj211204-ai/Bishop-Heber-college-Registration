@@ -1,457 +1,1019 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Sheet Generator</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MV Verify — Secure Email Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  /* ---------- Basic Reset ---------- */
-  * {
-    box-sizing: border-box;
+  /* ============ Design Tokens ============ */
+  :root{
+    --pink-950:#5c0f31;
+    --pink-800:#9c1755;
+    --pink-700:#c2185b;
+    --pink-600:#e02673;
+    --pink-500:#ff3e82;
+    --pink-400:#ff6b9d;
+    --pink-200:#ffc2d9;
+    --pink-100:#ffe3ee;
+    --pink-50:#fff5f9;
+    --white:#ffffff;
+    --ink:#2a1220;
+    --ink-soft:#5c4450;
+    --ink-muted:#8a6b78;
+    --success:#1fa971;
+    --success-soft:#e3f8ef;
+    --danger:#e5484d;
+    --danger-soft:#fdeaea;
+    --radius-xl:32px;
+    --radius-lg:24px;
+    --radius-md:16px;
+    --radius-sm:10px;
+    --shadow-soft: 0 20px 50px -22px rgba(194,24,91,.30);
+    --shadow-card: 0 30px 80px -30px rgba(92,15,49,.35);
+    --font-display:'Fraunces', serif;
+    --font-body:'Inter', sans-serif;
+    --ease: cubic-bezier(.16,1,.3,1);
   }
 
-  body {
-    margin: 0;
-    padding: 20px;
-    background: #ffffff;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222;
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:var(--white);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{ font-family:var(--font-display); margin:0; letter-spacing:-0.01em; }
+  p{ margin:0; }
+  button{ font-family:inherit; }
+  a{ color:var(--pink-700); }
+  ::selection{ background:var(--pink-200); color:var(--pink-950); }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
   }
 
-  h1 {
-    font-size: 22px;
-    text-align: center;
-    margin-bottom: 20px;
+  /* ============ Shell / Split Layout ============ */
+  .app-shell{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   }
 
-  /* ---------- Form Layout ---------- */
-  .form-container {
-    max-width: 600px;
-    margin: 0 auto 20px auto;
-    background: #fafafa;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 16px;
+  /* ---- Brand / Pink panel ---- */
+  .brand-panel{
+    position:relative;
+    background:
+      radial-gradient(120% 140% at 15% 10%, var(--pink-500) 0%, transparent 55%),
+      linear-gradient(165deg, var(--pink-700) 0%, var(--pink-950) 100%);
+    color:var(--white);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:56px 56px 44px;
+  }
+  .brand-panel::before,
+  .brand-panel::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    filter:blur(2px);
+    background:rgba(255,255,255,.08);
+  }
+  .brand-panel::before{ width:340px; height:340px; top:-120px; right:-100px; }
+  .brand-panel::after{ width:220px; height:220px; bottom:-80px; left:-60px; background:rgba(255,255,255,.06); }
+
+  .brand-top{ display:flex; align-items:center; gap:12px; position:relative; z-index:2; }
+  .brand-mark{
+    width:44px; height:44px; border-radius:14px;
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(6px);
+    font-family:var(--font-display); font-weight:700; font-size:18px;
+  }
+  .brand-name{ font-size:19px; font-weight:600; letter-spacing:0.01em; }
+  .brand-name span{ opacity:.7; font-weight:400; }
+
+  .brand-mid{ position:relative; z-index:2; max-width:440px; }
+  .brand-mid h1{
+    font-size:clamp(32px,3.4vw,44px);
+    line-height:1.1;
+    font-weight:600;
+    margin-bottom:18px;
+  }
+  .brand-mid h1 em{ font-style:italic; font-weight:500; color:var(--pink-100); }
+  .brand-mid p{
+    font-size:16px;
+    line-height:1.6;
+    color:rgba(255,255,255,.78);
+    max-width:380px;
   }
 
-  .form-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 10px;
+  .illustration-wrap{
+    margin-top:36px;
+    display:flex; align-items:flex-end; gap:16px;
+    position:relative; z-index:2;
+  }
+  .float-anim{ animation: floaty 5s ease-in-out infinite; }
+  @keyframes floaty{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-10px) rotate(-1.2deg); }
   }
 
-  .form-group {
-    flex: 1;
-    min-width: 140px;
-    display: flex;
-    flex-direction: column;
+  .glass-chip{
+    position:relative; z-index:2;
+    margin-top:28px;
+    display:inline-flex; align-items:center; gap:10px;
+    padding:12px 18px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:999px;
+    backdrop-filter:blur(10px);
+    width:fit-content;
+    font-size:13.5px;
+    color:rgba(255,255,255,.9);
+  }
+  .glass-chip .dot{ width:8px; height:8px; border-radius:50%; background:#4ee6a0; box-shadow:0 0 0 4px rgba(78,230,160,.25); }
+
+  .brand-bottom{ position:relative; z-index:2; font-size:12.5px; color:rgba(255,255,255,.55); }
+
+  /* ---- Form panel (white) ---- */
+  .form-panel{
+    background:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    padding:40px 28px;
+    position:relative;
+  }
+  .form-panel::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(60% 45% at 100% 0%, var(--pink-50) 0%, transparent 60%),
+      radial-gradient(50% 40% at 0% 100%, var(--pink-50) 0%, transparent 60%);
+    pointer-events:none;
   }
 
-  label {
-    font-size: 13px;
-    margin-bottom: 4px;
-    font-weight: bold;
+  .card{
+    position:relative;
+    width:100%; max-width:420px;
+    background:var(--white);
+    border:1px solid var(--pink-100);
+    border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-card);
+    padding:40px 36px 34px;
   }
 
-  input[type="text"],
-  input[type="number"] {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
+  .mobile-brand{ display:none; }
+
+  /* ============ Views ============ */
+  .view{ display:none; }
+  .view.active{ display:block; animation:viewIn .48s var(--ease); }
+  @keyframes viewIn{
+    from{ opacity:0; transform:translateY(14px) scale(.985); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
   }
 
-  /* ---------- Buttons ---------- */
-  .button-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+  /* ============ Tabs ============ */
+  .tab-switch{
+    position:relative;
+    display:grid; grid-template-columns:1fr 1fr;
+    background:var(--pink-50);
+    border:1px solid var(--pink-100);
+    border-radius:999px;
+    padding:4px;
+    margin-bottom:30px;
+  }
+  .tab-switch .indicator{
+    position:absolute; top:4px; left:4px;
+    width:calc(50% - 4px); height:calc(100% - 8px);
+    background:var(--white);
+    border-radius:999px;
+    box-shadow:0 6px 18px -6px rgba(194,24,91,.35);
+    transition:transform .35s var(--ease);
+    z-index:1;
+  }
+  .tab-switch.pos-signin .indicator{ transform:translateX(100%); }
+  .tab-btn{
+    position:relative; z-index:2;
+    border:none; background:transparent;
+    padding:11px 10px;
+    font-size:14px; font-weight:600;
+    color:var(--ink-muted);
+    border-radius:999px;
+    cursor:pointer;
+    transition:color .25s ease;
+  }
+  .tab-btn.is-active{ color:var(--pink-800); }
+
+  .card-head{ margin-bottom:26px; }
+  .card-head h2{ font-size:25px; font-weight:600; color:var(--ink); margin-bottom:6px; }
+  .card-head p{ font-size:14px; color:var(--ink-muted); line-height:1.5; }
+
+  /* ============ Form Elements ============ */
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:12.5px; font-weight:600;
+    color:var(--ink-soft); margin-bottom:7px; letter-spacing:.01em;
+  }
+  .input-wrap{
+    position:relative;
+    display:flex; align-items:center;
+    border:1.5px solid #f0dbe4;
+    background:var(--pink-50);
+    border-radius:var(--radius-md);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .input-wrap:focus-within{
+    border-color:var(--pink-500);
+    background:var(--white);
+    box-shadow:0 0 0 4px var(--pink-100);
+  }
+  .input-wrap svg{ margin-left:14px; flex-shrink:0; color:var(--pink-600); opacity:.75; }
+  .input-wrap input{
+    width:100%;
+    border:none; background:transparent; outline:none;
+    padding:13px 14px 13px 10px;
+    font-size:14.5px; color:var(--ink);
+    font-family:inherit;
+  }
+  .input-wrap input::placeholder{ color:#c79aad; }
+  .toggle-eye{
+    background:none; border:none; cursor:pointer;
+    padding:8px 12px; color:var(--ink-muted);
+    display:flex; align-items:center;
+  }
+  .field-error{
+    font-size:12px; color:var(--danger); margin-top:6px;
+    display:none; align-items:center; gap:5px;
+  }
+  .field-error.show{ display:flex; }
+  .field.has-error .input-wrap{ border-color:var(--danger); background:var(--danger-soft); }
+
+  .form-msg{
+    display:none;
+    align-items:flex-start; gap:10px;
+    font-size:13px; line-height:1.5;
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    margin-bottom:16px;
+  }
+  .form-msg.show{ display:flex; }
+  .form-msg.error{ background:var(--danger-soft); color:#b8272c; }
+  .form-msg.info{ background:var(--pink-50); color:var(--pink-800); }
+
+  .row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .link-btn{
+    background:none; border:none; padding:0; cursor:pointer;
+    font-size:13px; font-weight:600; color:var(--pink-700);
+  }
+  .link-btn:hover{ text-decoration:underline; }
+
+  /* ============ Buttons ============ */
+  .btn{
+    width:100%;
+    border:none; cursor:pointer;
+    border-radius:999px;
+    padding:14px 20px;
+    font-size:15px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    transition:transform .18s ease, box-shadow .25s ease, opacity .2s ease, background .25s ease;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--pink-500), var(--pink-700));
+    color:var(--white);
+    box-shadow:0 14px 30px -12px rgba(224,38,115,.55);
+  }
+  .btn-primary:hover:not(:disabled){ transform:translateY(-2px); box-shadow:0 18px 36px -12px rgba(224,38,115,.65); }
+  .btn-primary:active:not(:disabled){ transform:translateY(0); }
+  .btn-primary:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
+
+  .btn-ghost{
+    background:var(--pink-50);
+    color:var(--pink-800);
+    border:1.5px solid var(--pink-100);
+  }
+  .btn-ghost:hover:not(:disabled){ background:var(--pink-100); }
+  .btn-ghost:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .btn-text{
+    background:none; border:none; color:var(--ink-muted);
+    font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .btn-text:hover{ color:var(--pink-700); }
+
+  .stack{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+
+  /* ============ Spinner ============ */
+  .spinner{
+    width:18px; height:18px;
+    border-radius:50%;
+    border:2.5px solid rgba(255,255,255,.4);
+    border-top-color:#fff;
+    animation:spin .7s linear infinite;
+    flex-shrink:0;
+  }
+  .spinner.dark{ border:2.5px solid var(--pink-100); border-top-color:var(--pink-600); }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ============ Centered status views (sending/verifying/checkinbox/success/error/blocked) ============ */
+  .status-view{ text-align:center; padding:6px 2px 2px; }
+  .status-icon{
+    width:88px; height:88px;
+    margin:0 auto 22px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    background:var(--pink-50);
+    position:relative;
+  }
+  .status-icon.success{ background:var(--success-soft); }
+  .status-icon.error{ background:var(--danger-soft); }
+  .status-icon .ring{
+    position:absolute; inset:-6px;
+    border-radius:50%;
+    border:1.5px solid var(--pink-200);
+    animation:ringPulse 2.2s ease-out infinite;
+  }
+  @keyframes ringPulse{
+    0%{ transform:scale(.92); opacity:.9; }
+    80%{ transform:scale(1.18); opacity:0; }
+    100%{ opacity:0; }
+  }
+  .status-view h2{ font-size:22px; font-weight:600; margin-bottom:10px; }
+  .status-view p{ font-size:14px; color:var(--ink-muted); line-height:1.6; max-width:320px; margin:0 auto; }
+  .status-view .email-highlight{ color:var(--pink-700); font-weight:700; }
+
+  .big-spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3.5px solid var(--pink-100);
+    border-top-color:var(--pink-600);
+    animation:spin .8s linear infinite;
+    margin:0 auto;
   }
 
-  button {
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    flex: 1;
-    min-width: 120px;
+  /* Seal check-mark draw animation */
+  .seal-check circle{
+    stroke-dasharray:210; stroke-dashoffset:210;
+    animation:drawCircle .7s var(--ease) forwards;
+  }
+  .seal-check path{
+    stroke-dasharray:40; stroke-dashoffset:40;
+    animation:drawCheck .45s var(--ease) forwards .55s;
+  }
+  @keyframes drawCircle{ to{ stroke-dashoffset:0; } }
+  @keyframes drawCheck{ to{ stroke-dashoffset:0; } }
+
+  .envelope-anim .flap{ transform-origin:100px 46px; animation:flapOpen 1.1s var(--ease) infinite alternate; }
+  @keyframes flapOpen{ from{ transform:rotateX(0deg); } to{ transform:rotateX(35deg); } }
+
+  .resend-row{
+    margin-top:22px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .timer-text{ font-size:12.5px; color:var(--ink-muted); }
+
+  .divider-line{
+    height:1px; background:var(--pink-100); margin:24px 0;
   }
 
-  button:hover {
-    background: #1d4ed8;
+  /* ============ Dashboard ============ */
+  .dash-avatar{
+    width:64px; height:64px; border-radius:20px;
+    background:linear-gradient(135deg, var(--pink-500), var(--pink-700));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:24px; font-weight:600;
+    margin-bottom:18px;
+    box-shadow:0 14px 26px -12px rgba(224,38,115,.5);
   }
-
-  button:active {
-    background: #1e40af;
+  .verified-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--success-soft); color:var(--success);
+    font-size:12px; font-weight:700;
+    padding:5px 12px; border-radius:999px;
+    margin-top:2px;
   }
-
-  /* ---------- Table ---------- */
-  .table-container {
-    max-width: 900px;
-    margin: 0 auto;
-    overflow-x: auto;
+  .dash-info-card{
+    background:var(--pink-50);
+    border:1px solid var(--pink-100);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+    margin:20px 0;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
   }
+  .dash-info-card .label{ font-size:11.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+  .dash-info-card .value{ font-size:14px; font-weight:600; color:var(--ink); word-break:break-all; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #f5f5f5;
-  }
-
-  th, td {
-    border: 1px solid #ccc;
-    padding: 8px 10px;
-    text-align: left;
-    font-size: 14px;
-  }
-
-  th {
-    background: #e0e0e0;
-  }
-
-  tr:nth-child(even) {
-    background: #ececec;
-  }
-
-  .row-actions {
-    display: flex;
-    gap: 6px;
-  }
-
-  .row-actions button {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-width: 60px;
-    flex: none;
-  }
-
-  .empty-msg {
-    text-align: center;
-    padding: 12px;
-    color: #777;
-    font-size: 14px;
-  }
-
-  /* ---------- Responsive ---------- */
-  @media (max-width: 500px) {
-    .form-group {
-      min-width: 100%;
+  /* ============ Responsive ============ */
+  @media (max-width: 900px){
+    .app-shell{ grid-template-columns:1fr; }
+    .brand-panel{ display:none; }
+    .mobile-brand{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      margin-bottom:22px;
     }
-    button {
-      min-width: 100%;
+    .mobile-brand .brand-mark{
+      background:var(--pink-100); border:1px solid var(--pink-200); color:var(--pink-700);
     }
+    .mobile-brand .brand-name{ color:var(--pink-800); }
+    .form-panel{ padding:28px 18px 40px; align-items:flex-start; padding-top:48px; }
+    .card{ padding:30px 22px 26px; border-radius:var(--radius-lg); }
   }
+
+  @media (max-width:420px){
+    .card-head h2{ font-size:22px; }
+  }
+
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
 </style>
 </head>
 <body>
 
-<h1>Student Sheet Generator</h1>
+<div class="app-shell">
 
-<!-- ================= FORM ================= -->
-<div class="form-container">
-  <div class="form-row">
-    <div class="form-group">
-      <label for="startSerial">Starting Serial Number</label>
-      <input type="number" id="startSerial" value="1">
+  <!-- ===================== BRAND / PINK PANEL ===================== -->
+  <aside class="brand-panel">
+    <div class="brand-top">
+      <div class="brand-mark">M</div>
+      <div class="brand-name">MV <span>Verify</span></div>
     </div>
-  </div>
 
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nameInput">Name</label>
-      <input type="text" id="nameInput" placeholder="Enter student name">
+    <div class="brand-mid">
+      <h1>Every account,<br><em>verified</em> the beautiful way.</h1>
+      <p>MV Verify secures every sign-up with real email ownership checks — fast, friendly, and production-ready.</p>
+
+      <div class="illustration-wrap float-anim">
+        <svg width="180" height="130" viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="24" width="180" height="106" rx="16" fill="#ffffff" fill-opacity="0.14" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+          <path d="M14 34L100 92L186 34" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="152" cy="20" r="20" fill="#4ee6a0"/>
+          <path d="M143 20l6 6 11-13" stroke="#0f3d2b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="glass-chip">
+        <span class="dot"></span>
+        Verification link sent instantly
+      </div>
     </div>
-    <div class="form-group">
-      <label for="classInput">Class</label>
-      <input type="text" id="classInput" placeholder="Enter class">
-    </div>
-    <div class="form-group">
-      <label for="rollInput">Roll Number</label>
-      <input type="text" id="rollInput" placeholder="Enter roll number">
-    </div>
-  </div>
 
-  <div class="button-row">
-    <button id="addBtn">Add Student</button>
-    <button id="updateBtn" style="display:none;">Update Student</button>
-    <button id="clearBtn">Clear Form</button>
-    <button id="downloadBtn">Download Word</button>
-  </div>
-</div>
+    <div class="brand-bottom">© 2026 MV Verify · Secured by Firebase Authentication</div>
+  </aside>
 
-<!-- ================= TABLE ================= -->
-<div class="table-container">
-  <table id="studentTable">
-    <thead>
-      <tr>
-        <th>Serial No</th>
-        <th>Name</th>
-        <th>Class</th>
-        <th>Roll Number</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody">
-      <!-- Rows inserted dynamically -->
-    </tbody>
-  </table>
-  <div id="emptyMsg" class="empty-msg">No students added yet.</div>
-</div>
+  <!-- ===================== FORM / WHITE PANEL ===================== -->
+  <main class="form-panel">
+    <div class="card" id="mainCard">
 
-<script>
-  // ============================================================
-  // Student Sheet Generator - Vanilla JS Logic
-  // Data is stored only in memory (an array) until export.
-  // ============================================================
+      <div class="mobile-brand">
+        <div class="brand-mark">M</div>
+        <div class="brand-name">MV Verify</div>
+      </div>
 
-  // Array holding student records: { name, className, roll }
-  // Serial numbers are NOT stored - they are always calculated
-  // dynamically from the "Starting Serial Number" + index.
-  let students = [];
+      <!-- ---------- AUTH VIEW (Sign up / Sign in) ---------- -->
+      <section class="view active" id="view-auth">
+        <div class="tab-switch pos-signup" id="tabSwitch">
+          <div class="indicator"></div>
+          <button class="tab-btn is-active" id="tabSignup" type="button">Create Account</button>
+          <button class="tab-btn" id="tabSignin" type="button">Sign In</button>
+        </div>
 
-  // Tracks which student (by array index) is currently being edited.
-  // null means "Add" mode, a number means "Edit" mode.
-  let editingIndex = null;
-
-  // ---------- DOM References ----------
-  const startSerialInput = document.getElementById('startSerial');
-  const nameInput = document.getElementById('nameInput');
-  const classInput = document.getElementById('classInput');
-  const rollInput = document.getElementById('rollInput');
-
-  const addBtn = document.getElementById('addBtn');
-  const updateBtn = document.getElementById('updateBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const downloadBtn = document.getElementById('downloadBtn');
-
-  const tableBody = document.getElementById('tableBody');
-  const emptyMsg = document.getElementById('emptyMsg');
-
-  // ---------- Render Table ----------
-  // Rebuilds the visible table rows based on the `students` array.
-  // Serial numbers are recalculated every time from startSerial.
-  function renderTable() {
-    tableBody.innerHTML = '';
-
-    if (students.length === 0) {
-      emptyMsg.style.display = 'block';
-      return;
-    }
-    emptyMsg.style.display = 'none';
-
-    // Parse the starting serial number (default to 1 if invalid)
-    const startSerial = parseInt(startSerialInput.value, 10) || 1;
-
-    students.forEach((student, index) => {
-      const serialNo = startSerial + index; // continuous, no gaps
-
-      const tr = document.createElement('tr');
-
-      tr.innerHTML = `
-        <td>${serialNo}</td>
-        <td>${escapeHtml(student.name)}</td>
-        <td>${escapeHtml(student.className)}</td>
-        <td>${escapeHtml(student.roll)}</td>
-        <td>
-          <div class="row-actions">
-            <button class="edit-btn" data-index="${index}">Edit</button>
-            <button class="delete-btn" data-index="${index}">Delete</button>
+        <!-- Sign Up Form -->
+        <form id="signupForm" novalidate>
+          <div class="card-head">
+            <h2>Create your account</h2>
+            <p>Join MV Verify in seconds — we'll confirm your email right after.</p>
           </div>
-        </td>
-      `;
 
-      tableBody.appendChild(tr);
-    });
+          <div class="form-msg error" id="signupFormMsg"></div>
 
-    // Attach event listeners to newly created buttons
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => startEdit(parseInt(btn.dataset.index, 10)));
-    });
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', () => deleteStudent(parseInt(btn.dataset.index, 10)));
-    });
+          <div class="field" id="fieldName">
+            <label for="suName">Full name</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5Zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5Z" fill="currentColor"/></svg>
+              <input type="text" id="suName" placeholder="Jane Doe" autocomplete="name" />
+            </div>
+            <div class="field-error" id="errName">Please enter your full name.</div>
+          </div>
+
+          <div class="field" id="fieldEmailSU">
+            <label for="suEmail">Email address</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 0 8 7 8-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <input type="email" id="suEmail" placeholder="you@example.com" autocomplete="email" />
+            </div>
+            <div class="field-error" id="errEmailSU">Please enter a valid email address.</div>
+          </div>
+
+          <div class="field" id="fieldPassSU">
+            <label for="suPass">Password</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Z" fill="currentColor"/></svg>
+              <input type="password" id="suPass" placeholder="At least 6 characters" autocomplete="new-password" />
+              <button type="button" class="toggle-eye" data-target="suPass" aria-label="Show password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+            <div class="field-error" id="errPassSU">Password must be at least 6 characters.</div>
+          </div>
+
+          <div class="field" id="fieldConfirmSU">
+            <label for="suPassConfirm">Confirm password</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Z" fill="currentColor"/></svg>
+              <input type="password" id="suPassConfirm" placeholder="Re-enter your password" autocomplete="new-password" />
+              <button type="button" class="toggle-eye" data-target="suPassConfirm" aria-label="Show password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+            <div class="field-error" id="errConfirmSU">Passwords do not match.</div>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="signupBtn">
+            <span id="signupBtnLabel">Create Account</span>
+          </button>
+        </form>
+
+        <!-- Sign In Form -->
+        <form id="signinForm" novalidate style="display:none;">
+          <div class="card-head">
+            <h2>Welcome back</h2>
+            <p>Sign in to continue to your verified account.</p>
+          </div>
+
+          <div class="form-msg error" id="signinFormMsg"></div>
+
+          <div class="field" id="fieldEmailSI">
+            <label for="siEmail">Email address</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 0 8 7 8-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <input type="email" id="siEmail" placeholder="you@example.com" autocomplete="email" />
+            </div>
+            <div class="field-error" id="errEmailSI">Please enter a valid email address.</div>
+          </div>
+
+          <div class="field" id="fieldPassSI">
+            <label for="siPass">Password</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Z" fill="currentColor"/></svg>
+              <input type="password" id="siPass" placeholder="Your password" autocomplete="current-password" />
+              <button type="button" class="toggle-eye" data-target="siPass" aria-label="Show password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+              </button>
+            </div>
+            <div class="field-error" id="errPassSI">Please enter your password.</div>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="signinBtn">
+            <span id="signinBtnLabel">Sign In</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- ---------- SENDING VERIFICATION EMAIL ---------- -->
+      <section class="view status-view" id="view-sending">
+        <div class="status-icon">
+          <span class="ring"></span>
+          <svg class="envelope-anim" width="40" height="34" viewBox="0 0 100 74" style="perspective:200px;">
+            <rect x="2" y="10" width="96" height="62" rx="8" fill="#ffe3ee" stroke="#ff3e82" stroke-width="2"/>
+            <path class="flap" d="M2 14 L50 46 L98 14" fill="none" stroke="#c2185b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Sending your verification email…</h2>
+        <p>Hang tight while we prepare a secure link just for you.</p>
+        <div class="big-spinner" style="margin-top:26px;"></div>
+      </section>
+
+      <!-- ---------- CHECK INBOX (email sent) ---------- -->
+      <section class="view status-view" id="view-checkinbox">
+        <div class="status-icon">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm0 0 8 7 8-7" stroke="#c2185b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Check your inbox</h2>
+        <p>We've sent a verification link to <span class="email-highlight" id="checkinboxEmail">you@example.com</span>. Click it to activate your account.</p>
+
+        <div class="resend-row">
+          <button class="btn-text" id="resendFromCheckinbox">Resend verification email</button>
+          <span class="timer-text" id="resendTimerText" style="display:none;"></span>
+        </div>
+
+        <div class="divider-line"></div>
+        <button class="btn btn-ghost" id="backToSigninFromCheckinbox" type="button">Back to sign in</button>
+      </section>
+
+      <!-- ---------- VERIFYING (from email link) ---------- -->
+      <section class="view status-view" id="view-verifying">
+        <div class="status-icon">
+          <span class="ring"></span>
+          <div class="big-spinner"></div>
+        </div>
+        <h2>Verifying your email…</h2>
+        <p>Please wait a moment while we confirm your verification link.</p>
+      </section>
+
+      <!-- ---------- VERIFIED SUCCESS ---------- -->
+      <section class="view status-view" id="view-verified">
+        <div class="status-icon success">
+          <svg class="seal-check" width="46" height="46" viewBox="0 0 60 60" fill="none">
+            <circle cx="30" cy="30" r="26" stroke="#1fa971" stroke-width="4"/>
+            <path d="M18 31l8 8 16-17" stroke="#1fa971" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Email Verified Successfully</h2>
+        <p>Your email has been confirmed. Your MV Verify account is now fully active.</p>
+        <div class="stack">
+          <button class="btn btn-primary" id="continueAfterVerify" type="button">Continue to Sign In</button>
+        </div>
+      </section>
+
+      <!-- ---------- VERIFICATION LINK ERROR ---------- -->
+      <section class="view status-view" id="view-verify-error">
+        <div class="status-icon error">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1 1 0 0 0 2.76 20h18.48a1 1 0 0 0 .87-1.59l-8.4-14.55a1 1 0 0 0-1.74 0Z" stroke="#e5484d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Link invalid or expired</h2>
+        <p id="verifyErrorMsg">This verification link is no longer valid. Please request a new one from your account.</p>
+        <div class="stack">
+          <button class="btn btn-primary" id="backToSigninFromError" type="button">Back to sign in</button>
+        </div>
+      </section>
+
+      <!-- ---------- BLOCKED (signed in, not verified) ---------- -->
+      <section class="view status-view" id="view-blocked">
+        <div class="status-icon">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Z" fill="#c2185b"/></svg>
+        </div>
+        <h2>Please verify your email first</h2>
+        <p>You're almost there! We sent a link to <span class="email-highlight" id="blockedEmail">you@example.com</span>. Verify your email to unlock your account.</p>
+
+        <div class="stack">
+          <button class="btn btn-primary" id="refreshVerifyStatus" type="button">
+            <span id="refreshVerifyLabel">I've verified — Refresh</span>
+          </button>
+          <button class="btn btn-ghost" id="resendFromBlocked" type="button">Resend verification email</button>
+        </div>
+        <span class="timer-text" id="blockedTimerText" style="display:none; margin-top:10px;"></span>
+
+        <div class="divider-line"></div>
+        <button class="btn-text" id="signOutFromBlocked">Sign out</button>
+      </section>
+
+      <!-- ---------- DASHBOARD ---------- -->
+      <section class="view" id="view-dashboard">
+        <div class="dash-avatar" id="dashAvatar">MV</div>
+        <h2 style="font-size:23px; font-weight:600; margin-bottom:4px;" id="dashName">Welcome back</h2>
+        <span class="verified-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="#1fa971" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Email verified
+        </span>
+
+        <div class="dash-info-card">
+          <div>
+            <div class="label">Account email</div>
+            <div class="value" id="dashEmail">you@example.com</div>
+          </div>
+        </div>
+
+        <p style="font-size:14px; color:var(--ink-muted); line-height:1.6;">
+          You now have full access to MV Verify. This is a placeholder home screen — build your app experience here.
+        </p>
+
+        <button class="btn btn-ghost" id="signOutFromDashboard" type="button" style="margin-top:20px;">Sign out</button>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ===================== FIREBASE + APP LOGIC ===================== -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile,
+    sendEmailVerification,
+    applyActionCode,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDVpiLRhQpZeqqgTPozfQts0pRS5LnD9BE",
+    authDomain: "terrapels.firebaseapp.com",
+    databaseURL: "https://terrapels-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "terrapels",
+    storageBucket: "terrapels.firebasestorage.app",
+    messagingSenderId: "689872687607",
+    appId: "1:689872687607:web:b31159f96c6199a8849ef2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Where the verification link should return to (this same page).
+  const actionCodeSettings = {
+    url: window.location.origin + window.location.pathname,
+    handleCodeInApp: false
+  };
+
+  // ---------- View helpers ----------
+  const views = {};
+  document.querySelectorAll(".view").forEach(v => views[v.id] = v);
+  function showView(id){
+    Object.values(views).forEach(v => v.classList.remove("active"));
+    if(views[id]) views[id].classList.add("active");
   }
 
-  // Basic HTML escaping to avoid broken table rendering if user
-  // enters characters like < or >.
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
+  // ---------- Tabs ----------
+  const tabSwitch = document.getElementById("tabSwitch");
+  const tabSignup = document.getElementById("tabSignup");
+  const tabSignin = document.getElementById("tabSignin");
+  const signupForm = document.getElementById("signupForm");
+  const signinForm = document.getElementById("signinForm");
 
-  // ---------- Add Student ----------
-  addBtn.addEventListener('click', () => {
-    const name = nameInput.value.trim();
-    const className = classInput.value.trim();
-    const roll = rollInput.value.trim();
-
-    if (!name || !className || !roll) {
-      alert('Please fill in Name, Class, and Roll Number.');
-      return;
+  function activateTab(which){
+    if(which === "signup"){
+      tabSwitch.classList.remove("pos-signin"); tabSwitch.classList.add("pos-signup");
+      tabSignup.classList.add("is-active"); tabSignin.classList.remove("is-active");
+      signupForm.style.display = "block"; signinForm.style.display = "none";
+    } else {
+      tabSwitch.classList.remove("pos-signup"); tabSwitch.classList.add("pos-signin");
+      tabSignin.classList.add("is-active"); tabSignup.classList.remove("is-active");
+      signinForm.style.display = "block"; signupForm.style.display = "none";
     }
+  }
+  tabSignup.addEventListener("click", () => activateTab("signup"));
+  tabSignin.addEventListener("click", () => activateTab("signin"));
 
-    students.push({ name, className, roll });
-    renderTable();
-    clearFormFields();
+  // ---------- Password visibility toggles ----------
+  document.querySelectorAll(".toggle-eye").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      input.type = input.type === "password" ? "text" : "password";
+    });
   });
 
-  // ---------- Edit Student ----------
-  function startEdit(index) {
-    const student = students[index];
-    if (!student) return;
-
-    nameInput.value = student.name;
-    classInput.value = student.className;
-    rollInput.value = student.roll;
-
-    editingIndex = index;
-
-    // Switch buttons: show "Update", hide "Add"
-    addBtn.style.display = 'none';
-    updateBtn.style.display = 'inline-block';
+  // ---------- Field error helpers ----------
+  function setFieldError(fieldId, errId, show){
+    document.getElementById(fieldId).classList.toggle("has-error", show);
+    document.getElementById(errId).classList.toggle("show", show);
+  }
+  function setFormMsg(msgId, text){
+    const el = document.getElementById(msgId);
+    if(!text){ el.classList.remove("show"); el.textContent = ""; return; }
+    el.textContent = text;
+    el.classList.add("show");
   }
 
-  // ---------- Update (Save Edit) ----------
-  updateBtn.addEventListener('click', () => {
-    if (editingIndex === null) return;
+  function isValidEmail(v){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
 
-    const name = nameInput.value.trim();
-    const className = classInput.value.trim();
-    const roll = rollInput.value.trim();
+  function friendlyAuthError(err){
+    const code = err && err.code ? err.code : "";
+    const map = {
+      "auth/email-already-in-use": "An account with this email already exists. Try signing in instead.",
+      "auth/invalid-email": "That email address doesn't look right.",
+      "auth/weak-password": "Please choose a password with at least 6 characters.",
+      "auth/user-not-found": "No account found with this email.",
+      "auth/wrong-password": "Incorrect password. Please try again.",
+      "auth/invalid-credential": "Incorrect email or password. Please try again.",
+      "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+      "auth/user-disabled": "This account has been disabled. Contact support for help.",
+      "auth/network-request-failed": "Network error. Please check your connection and try again.",
+      "auth/expired-action-code": "This verification link has expired. Please request a new one.",
+      "auth/invalid-action-code": "This verification link is invalid or has already been used."
+    };
+    return map[code] || "Something went wrong. Please try again.";
+  }
 
-    if (!name || !className || !roll) {
-      alert('Please fill in Name, Class, and Roll Number.');
-      return;
+  function setBtnLoading(btn, labelEl, loadingText, isLoading, restoreText){
+    if(isLoading){
+      btn.disabled = true;
+      labelEl.innerHTML = `<span class="spinner"></span>${loadingText}`;
+    } else {
+      btn.disabled = false;
+      labelEl.textContent = restoreText;
     }
+  }
 
-    students[editingIndex] = { name, className, roll };
-    editingIndex = null;
+  function initials(name, email){
+    if(name && name.trim()){
+      const parts = name.trim().split(/\s+/);
+      return ((parts[0][0] || "") + (parts[1] ? parts[1][0] : "")).toUpperCase();
+    }
+    return (email ? email[0] : "M").toUpperCase();
+  }
 
-    // Switch buttons back to "Add" mode
-    addBtn.style.display = 'inline-block';
-    updateBtn.style.display = 'none';
+  function minDelay(promise, ms){
+    return Promise.all([promise, new Promise(res => setTimeout(res, ms))]).then(r => r[0]);
+  }
 
-    renderTable();
-    clearFormFields();
+  // ---------- Resend cooldown ----------
+  function startCooldown(button, timerEl, seconds){
+    let remaining = seconds;
+    button.disabled = true;
+    timerEl.style.display = "inline-block";
+    timerEl.textContent = `You can resend in ${remaining}s`;
+    const interval = setInterval(() => {
+      remaining -= 1;
+      if(remaining <= 0){
+        clearInterval(interval);
+        button.disabled = false;
+        timerEl.style.display = "none";
+      } else {
+        timerEl.textContent = `You can resend in ${remaining}s`;
+      }
+    }, 1000);
+  }
+
+  // ============ SIGN UP ============
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setFormMsg("signupFormMsg", "");
+
+    const name = document.getElementById("suName").value.trim();
+    const email = document.getElementById("suEmail").value.trim();
+    const pass = document.getElementById("suPass").value;
+    const confirm = document.getElementById("suPassConfirm").value;
+
+    let valid = true;
+    setFieldError("fieldName","errName", false);
+    setFieldError("fieldEmailSU","errEmailSU", false);
+    setFieldError("fieldPassSU","errPassSU", false);
+    setFieldError("fieldConfirmSU","errConfirmSU", false);
+
+    if(!name){ setFieldError("fieldName","errName", true); valid = false; }
+    if(!isValidEmail(email)){ setFieldError("fieldEmailSU","errEmailSU", true); valid = false; }
+    if(!pass || pass.length < 6){ setFieldError("fieldPassSU","errPassSU", true); valid = false; }
+    if(pass !== confirm){ setFieldError("fieldConfirmSU","errConfirmSU", true); valid = false; }
+    if(!valid) return;
+
+    const btn = document.getElementById("signupBtn");
+    const label = document.getElementById("signupBtnLabel");
+    setBtnLoading(btn, label, "Creating account…", true);
+
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+
+      showView("view-sending");
+      await minDelay(sendEmailVerification(cred.user, actionCodeSettings), 1400);
+
+      document.getElementById("checkinboxEmail").textContent = email;
+      showView("view-checkinbox");
+      startCooldown(document.getElementById("resendFromCheckinbox"), document.getElementById("resendTimerText"), 60);
+
+    } catch(err){
+      setFormMsg("signupFormMsg", friendlyAuthError(err));
+      showView("view-auth");
+    } finally {
+      setBtnLoading(btn, label, "", false, "Create Account");
+    }
   });
 
-  // ---------- Delete Student ----------
-  function deleteStudent(index) {
-    students.splice(index, 1);
-    // Serial numbers auto-regenerate on next renderTable()
-    // since they are calculated from startSerial + array index.
-    renderTable();
+  // ============ SIGN IN ============
+  signinForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setFormMsg("signinFormMsg", "");
 
-    // If we were editing the deleted row, cancel edit mode
-    if (editingIndex === index) {
-      editingIndex = null;
-      addBtn.style.display = 'inline-block';
-      updateBtn.style.display = 'none';
-      clearFormFields();
+    const email = document.getElementById("siEmail").value.trim();
+    const pass = document.getElementById("siPass").value;
+
+    let valid = true;
+    setFieldError("fieldEmailSI","errEmailSI", false);
+    setFieldError("fieldPassSI","errPassSI", false);
+
+    if(!isValidEmail(email)){ setFieldError("fieldEmailSI","errEmailSI", true); valid = false; }
+    if(!pass){ setFieldError("fieldPassSI","errPassSI", true); valid = false; }
+    if(!valid) return;
+
+    const btn = document.getElementById("signinBtn");
+    const label = document.getElementById("signinBtnLabel");
+    setBtnLoading(btn, label, "Signing in…", true);
+
+    try{
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      await cred.user.reload();
+      routeForUser(auth.currentUser);
+    } catch(err){
+      setFormMsg("signinFormMsg", friendlyAuthError(err));
+    } finally {
+      setBtnLoading(btn, label, "", false, "Sign In");
     }
-  }
-
-  // ---------- Clear Form ----------
-  // Clears Name, Class, Roll Number only.
-  // Starting Serial Number is left untouched, as required.
-  function clearFormFields() {
-    nameInput.value = '';
-    classInput.value = '';
-    rollInput.value = '';
-    nameInput.focus();
-  }
-
-  clearBtn.addEventListener('click', () => {
-    clearFormFields();
-    // Also cancel any in-progress edit
-    editingIndex = null;
-    addBtn.style.display = 'inline-block';
-    updateBtn.style.display = 'none';
   });
 
-  // Re-render table if the starting serial number is changed,
-  // so on-screen serials always stay accurate.
-  startSerialInput.addEventListener('input', renderTable);
-
-  // ---------- Download Word (.doc) ----------
-  downloadBtn.addEventListener('click', () => {
-    if (students.length === 0) {
-      alert('No students to export. Please add at least one student.');
-      return;
+  // ============ Routing after auth state resolves ============
+  function routeForUser(user){
+    if(!user){ showView("view-auth"); return; }
+    if(user.emailVerified){
+      document.getElementById("dashName").textContent = `Welcome, ${user.displayName || "there"}`;
+      document.getElementById("dashEmail").textContent = user.email || "";
+      document.getElementById("dashAvatar").textContent = initials(user.displayName, user.email);
+      showView("view-dashboard");
+    } else {
+      document.getElementById("blockedEmail").textContent = user.email || "";
+      showView("view-blocked");
     }
+  }
 
-    const startSerial = parseInt(startSerialInput.value, 10) || 1;
+  // ============ Resend buttons ============
+  document.getElementById("resendFromCheckinbox").addEventListener("click", async () => {
+    if(!auth.currentUser) return;
+    try{
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
+    }catch(err){ /* silently ignore rate-limit spam */ }
+    startCooldown(document.getElementById("resendFromCheckinbox"), document.getElementById("resendTimerText"), 60);
+  });
 
-    // Build table rows in the EXPORT column order:
-    // S.No | Name | Roll Number | Class
-    let rowsHtml = '';
-    students.forEach((student, index) => {
-      const serialNo = startSerial + index;
-      rowsHtml += `
-        <tr>
-          <td>${escapeHtml(String(serialNo))}</td>
-          <td>${escapeHtml(student.name)}</td>
-          <td>${escapeHtml(student.roll)}</td>
-          <td>${escapeHtml(student.className)}</td>
-        </tr>`;
+  document.getElementById("resendFromBlocked").addEventListener("click", async () => {
+    if(!auth.currentUser) return;
+    try{
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
+    }catch(err){ /* ignore */ }
+    startCooldown(document.getElementById("resendFromBlocked"), document.getElementById("blockedTimerText"), 60);
+  });
+
+  // ============ Refresh verification status ============
+  document.getElementById("refreshVerifyStatus").addEventListener("click", async () => {
+    const btn = document.getElementById("refreshVerifyStatus");
+    const label = document.getElementById("refreshVerifyLabel");
+    if(!auth.currentUser) return;
+    setBtnLoading(btn, label, "Checking…", true);
+    try{
+      await auth.currentUser.reload();
+      routeForUser(auth.currentUser);
+    } finally {
+      setBtnLoading(btn, label, "", false, "I've verified — Refresh");
+    }
+  });
+
+  // ============ Sign out ============
+  async function doSignOut(){
+    await signOut(auth);
+    signupForm.reset(); signinForm.reset();
+    activateTab("signup");
+    showView("view-auth");
+  }
+  document.getElementById("signOutFromBlocked").addEventListener("click", doSignOut);
+  document.getElementById("signOutFromDashboard").addEventListener("click", doSignOut);
+
+  // ============ Back to sign in buttons ============
+  document.getElementById("backToSigninFromCheckinbox").addEventListener("click", async () => {
+    await doSignOut();
+    activateTab("signin");
+  });
+  document.getElementById("backToSigninFromError").addEventListener("click", () => {
+    activateTab("signin");
+    showView("view-auth");
+  });
+  document.getElementById("continueAfterVerify").addEventListener("click", async () => {
+    if(auth.currentUser){
+      await auth.currentUser.reload();
+      routeForUser(auth.currentUser);
+    } else {
+      activateTab("signin");
+      showView("view-auth");
+    }
+  });
+
+  // ============ Handle email verification link on load ============
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode");
+  const oobCode = params.get("oobCode");
+
+  async function handleVerificationLink(){
+    showView("view-verifying");
+    try{
+      await minDelay(applyActionCode(auth, oobCode), 1200);
+      history.replaceState({}, document.title, window.location.pathname);
+      showView("view-verified");
+      if(auth.currentUser) await auth.currentUser.reload();
+    } catch(err){
+      document.getElementById("verifyErrorMsg").textContent = friendlyAuthError(err);
+      showView("view-verify-error");
+    }
+  }
+
+  if(mode === "verifyEmail" && oobCode){
+    handleVerificationLink();
+  } else {
+    // Normal load: react to auth state
+    onAuthStateChanged(auth, async (user) => {
+      if(user){
+        await user.reload();
+        routeForUser(auth.currentUser);
+      } else {
+        showView("view-auth");
+      }
     });
-
-    // Minimal Word-compatible HTML document.
-    // No header, title, logo, footer, or watermark - table only.
-    const docHtml = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office"
-            xmlns:w="urn:schemas-microsoft-com:office:word"
-            xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          table { border-collapse: collapse; width: 100%; }
-          td, th { border: 1px solid #000000; padding: 5px 8px; font-family: Arial, sans-serif; font-size: 12pt; }
-          th { background: #d9d9d9; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <table>
-          <thead>
-            <tr>
-              <th>S.No</th>
-              <th>Name</th>
-              <th>Roll Number</th>
-              <th>Class</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
-
-    // Create a Blob with Word-compatible MIME type and trigger download.
-    const blob = new Blob(['\ufeff', docHtml], {
-      type: 'application/msword'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'Student_Sheet.doc';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  });
-
-  // ---------- Initial Render ----------
-  renderTable();
+  }
 </script>
-
 </body>
 </html>
